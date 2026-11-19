@@ -37,5 +37,4 @@ struct CachedImage: View {
             } catch {}
         }
     }
-    }
 }
