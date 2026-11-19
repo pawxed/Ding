@@ -124,7 +124,6 @@ final class Store: ObservableObject {
     func loginTwitter(clientId: String) async -> Bool {
         twitterClientId = clientId
         saveTwitterClientId()
-        guard #available(iOS 13.0, *) else { return false }
         do {
             let token = try await TwitterOAuth(clientId: clientId).signIn()
             let api = TwitterAPI(token: token)

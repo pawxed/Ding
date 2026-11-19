@@ -76,7 +76,50 @@ struct MastodonAPI {
         r.setValue("application/json", forHTTPHeaderField: "Content-Type")
         _ = try await HTTP.send(r)
     }
-}
+    func favourite(_ id: String) async throws {
+        let url = URL(string: "\(root)/api/v1/statuses/\(id)/favourite")!
+        _ = try await HTTP.send(HTTP.request(url, method: "POST", token: token))
+    }
+    func unfavourite(_ id: String) async throws {
+        let url = URL(string: "\(root)/api/v1/statuses/\(id)/unfavourite")!
+        _ = try await HTTP.send(HTTP.request(url, method: "POST", token: token))
+    }
+    func reblog(_ id: String) async throws {
+        let url = URL(string: "\(root)/api/v1/statuses/\(id)/reblog")!
+        _ = try await HTTP.send(HTTP.request(url, method: "POST", token: token))
+    }
+    func unreblog(_ id: String) async throws {
+        let url = URL(string: "\(root)/api/v1/statuses/\(id)/unreblog")!
+        _ = try await HTTP.send(HTTP.request(url, method: "POST", token: token))
+    }
+    func deleteStatus(_ id: String) async throws {
+        let url = URL(string: "\(root)/api/v1/statuses/\(id)")!
+        _ = try await HTTP.send(HTTP.request(url, method: "DELETE", token: token))
+    }
+    func reply(_ text: String, to id: String) async throws {
+        let url = URL(string: "\(root)/api/v1/statuses")!
+        _ = try await HTTP.send(HTTP.request(url, method: "POST", token: token, json: ["status": text, "in_reply_to_id": id]))
+    }
+    func search(_ query: String) async throws -> [Post] {
+        var comps = URLComponents(string: "\(root)/api/v2/search")!
+        comps.queryItems = [URLQueryItem(name: "q", value: query), URLQueryItem(name: "type", value: "statuses"), URLQueryItem(name: "limit", value: "20")]
+        let (data, _) = try await HTTP.send(HTTP.request(comps.url!, token: token))
+        guard let o = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let statuses = o["statuses"] as? [[String: Any]] else { return [] }
+        return statuses.compactMap { parse($0) }
+    }
+    func notifications() async throws -> [String] {
+        let url = URL(string: "\(root)/api/v1/notifications?limit=30")!
+        let (data, _) = try await HTTP.send(HTTP.request(url, token: token))
+        guard let arr = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]] else { return [] }
+        return arr.compactMap { $0["type"] as? String }
+    }
+    func verifyCredentials() async throws -> String {
+        let url = URL(string: "\(root)/api/v1/accounts/verify_credentials")!
+        let (data, _) = try await HTTP.send(HTTP.request(url, token: token))
+        guard let o = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return "me" }
+        return (o["display_name"] as? String) ?? (o["username"] as? String) ?? "me"
+    }}
 
 
 
@@ -139,7 +182,68 @@ struct BlueskyAPI {
         ]
         _ = try await HTTP.send(HTTP.request(url, method: "POST", token: session.accessJwt, json: body))
     }
-}
+    func like(uri: String, cid: String) async throws {
+        let url = URL(string: "\(Self.host)/xrpc/com.atproto.repo.createRecord")!
+        let body: [String: Any] = [
+            "repo": session.did,
+            "collection": "app.bsky.feed.like",
+            "record": [
+                "$type": "app.bsky.feed.like",
+                "subject": ["uri": uri, "cid": cid],
+                "createdAt": ISO8601DateFormatter().string(from: Date())
+            ]
+        ]
+        _ = try await HTTP.send(HTTP.request(url, method: "POST", token: session.accessJwt, json: body))
+    }
+    func repost(uri: String, cid: String) async throws {
+        let url = URL(string: "\(Self.host)/xrpc/com.atproto.repo.createRecord")!
+        let body: [String: Any] = [
+            "repo": session.did,
+            "collection": "app.bsky.feed.repost",
+            "record": [
+                "$type": "app.bsky.feed.repost",
+                "subject": ["uri": uri, "cid": cid],
+                "createdAt": ISO8601DateFormatter().string(from: Date())
+            ]
+        ]
+        _ = try await HTTP.send(HTTP.request(url, method: "POST", token: session.accessJwt, json: body))
+    }
+    func deleteRecord(collection: String, rkey: String) async throws {
+        let url = URL(string: "\(Self.host)/xrpc/com.atproto.repo.deleteRecord")!
+        let body: [String: Any] = ["repo": session.did, "collection": collection, "rkey": rkey]
+        _ = try await HTTP.send(HTTP.request(url, method: "POST", token: session.accessJwt, json: body))
+    }
+    func search(_ query: String) async throws -> [Post] {
+        var comps = URLComponents(string: "\(Self.host)/xrpc/app.bsky.feed.searchPosts")!
+        comps.queryItems = [URLQueryItem(name: "q", value: query), URLQueryItem(name: "limit", value: "20")]
+        let (data, _) = try await HTTP.send(HTTP.request(comps.url!, token: session.accessJwt))
+        guard let o = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let posts = o["posts"] as? [[String: Any]] else { return [] }
+        return posts.compactMap { p in
+            guard let uri = p["uri"] as? String,
+                  let author = p["author"] as? [String: Any] else { return nil }
+            let handle = "@\(author["handle"] as? String ?? "")"
+            let name = (author["displayName"] as? String).flatMap { $0.isEmpty ? nil : $0 } ?? author["handle"] as? String ?? "user"
+            let avatar = (author["avatar"] as? String).flatMap(URL.init(string:))
+            let record = p["record"] as? [String: Any]
+            return Post(id: "b:\(uri)", source: .bluesky, author: name, handle: handle, avatarURL: avatar, text: record?["text"] as? String ?? "", date: JSON.date(record?["createdAt"] as? String), likeCount: p["likeCount"] as? Int ?? 0, replyCount: p["replyCount"] as? Int ?? 0)
+        }
+    }
+    func notifications() async throws -> [String] {
+        var comps = URLComponents(string: "\(Self.host)/xrpc/app.bsky.notification.listNotifications")!
+        comps.queryItems = [URLQueryItem(name: "limit", value: "30")]
+        let (data, _) = try await HTTP.send(HTTP.request(comps.url!, token: session.accessJwt))
+        guard let o = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let notifs = o["notifications"] as? [[String: Any]] else { return [] }
+        return notifs.compactMap { $0["reason"] as? String }
+    }
+    func getProfile() async throws -> String {
+        var comps = URLComponents(string: "\(Self.host)/xrpc/app.bsky.actor.getProfile")!
+        comps.queryItems = [URLQueryItem(name: "actor", value: session.handle)]
+        let (data, _) = try await HTTP.send(HTTP.request(comps.url!, token: session.accessJwt))
+        guard let o = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return session.handle }
+        return (o["displayName"] as? String) ?? (o["handle"] as? String) ?? session.handle
+    }}
 
 
 
@@ -192,7 +296,46 @@ struct TwitterAPI {
         let url = URL(string: "\(host)/2/tweets")!
         _ = try await HTTP.send(HTTP.request(url, method: "POST", token: token, json: ["text": text]))
     }
-}
+    func like(tweetId: String, userId: String) async throws {
+        let url = URL(string: "\(host)/2/users/\(userId)/likes")!
+        _ = try await HTTP.send(HTTP.request(url, method: "POST", token: token, json: ["tweet_id": tweetId]))
+    }
+    func unlike(tweetId: String, userId: String) async throws {
+        let url = URL(string: "\(host)/2/users/\(userId)/likes/\(tweetId)")!
+        _ = try await HTTP.send(HTTP.request(url, method: "DELETE", token: token))
+    }
+    func retweet(tweetId: String, userId: String) async throws {
+        let url = URL(string: "\(host)/2/users/\(userId)/retweets")!
+        _ = try await HTTP.send(HTTP.request(url, method: "POST", token: token, json: ["tweet_id": tweetId]))
+    }
+    func unretweet(tweetId: String, userId: String) async throws {
+        let url = URL(string: "\(host)/2/users/\(userId)/retweets/\(tweetId)")!
+        _ = try await HTTP.send(HTTP.request(url, method: "DELETE", token: token))
+    }
+    func deleteTweet(_ id: String) async throws {
+        let url = URL(string: "\(host)/2/tweets/\(id)")!
+        _ = try await HTTP.send(HTTP.request(url, method: "DELETE", token: token))
+    }
+    func reply(_ text: String, to id: String) async throws {
+        let url = URL(string: "\(host)/2/tweets")!
+        _ = try await HTTP.send(HTTP.request(url, method: "POST", token: token, json: ["text": text, "reply": ["in_reply_to_tweet_id": id]]))
+    }
+    func search(_ query: String) async throws -> [Post] {
+        var comps = URLComponents(string: "\(host)/2/tweets/search/recent")!
+        comps.queryItems = [URLQueryItem(name: "query", value: query), URLQueryItem(name: "max_results", value: "20"), URLQueryItem(name: "tweet.fields", value: "created_at,public_metrics"), URLQueryItem(name: "expansions", value: "author_id"), URLQueryItem(name: "user.fields", value: "name,username,profile_image_url")]
+        let (data, _) = try await HTTP.send(HTTP.request(comps.url!, token: token))
+        guard let o = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return [] }
+        let users = (o["includes"] as? [String: Any])?["users"] as? [[String: Any]] ?? []
+        let userMap = Dictionary(uniqueKeysWithValues: users.compactMap { u -> (String, [String: Any])? in guard let id = u["id"] as? String else { return nil }; return (id, u) })
+        let tweets = o["data"] as? [[String: Any]] ?? []
+        return tweets.compactMap { t in
+            guard let id = t["id"] as? String else { return nil }
+            let authorId = t["author_id"] as? String ?? ""
+            let u = userMap[authorId]
+            let metrics = t["public_metrics"] as? [String: Any]
+            return Post(id: "t:\(id)", source: .twitter, author: u?["name"] as? String ?? "user", handle: "@\(u?["username"] as? String ?? "")", avatarURL: (u?["profile_image_url"] as? String).flatMap(URL.init(string:)), text: t["text"] as? String ?? "", date: JSON.date(t["created_at"] as? String), likeCount: metrics?["like_count"] as? Int ?? 0, replyCount: metrics?["reply_count"] as? Int ?? 0)
+        }
+    }}
 
 
 
@@ -252,7 +395,7 @@ final class TwitterOAuth: NSObject, ASWebAuthenticationPresentationContextProvid
 
     private func exchange(code: String, verifier: String) async {
         do {
-            var comps = URLComponents(string: "https://api.twitter.com/2/oauth2/token")!
+            let comps = URLComponents(string: "https://api.twitter.com/2/oauth2/token")!
             let body = "grant_type=authorization_code&code=\(code)&redirect_uri=\(redirectUri)&code_verifier=\(verifier)&client_id=\(clientId)"
             var req = URLRequest(url: comps.url!)
             req.httpMethod = "POST"
