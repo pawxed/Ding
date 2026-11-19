@@ -19,9 +19,10 @@ struct AccountsView: View {
     var body: some View {
                     Form {
                 Section(header: Text("Mastodon")) {
-                    TextField("Instance URL", text: $mBase)
+                    TextField("Instance URL (default woof.tech)", text: $mBase)
                         .autocapitalization(.none)
                         .autocorrectionDisabled()
+                    Text("Leave blank to use woof.tech").font(.caption).foregroundColor(.secondary)
                     SecureField("Access token", text: $mToken)
                     Button("Add Mastodon account") {
                         Task { await addMastodon() }
@@ -74,7 +75,8 @@ struct AccountsView: View {
 
     private func addMastodon() async {
         busy = true; defer { busy = false }
-        let acc = Account(id: UUID(), source: .mastodon, displayName: "Mastodon", handle: mBase, token: mToken, baseURL: mBase, secret: nil)
+        let base = mBase.trimmingCharacters(in: .whitespaces).isEmpty ? "https://woof.tech" : mBase
+        let acc = Account(id: UUID(), source: .mastodon, displayName: "Mastodon", handle: base, token: mToken, baseURL: base, secret: nil)
         store.add(acc)
         mToken = ""
         message = "Mastodon account added."
