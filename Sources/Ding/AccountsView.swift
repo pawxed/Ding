@@ -17,8 +17,7 @@ struct AccountsView: View {
     @State private var message: String?
 
     var body: some View {
-        NavigationView {
-            Form {
+                    Form {
                 Section(header: Text("Mastodon")) {
                     TextField("Instance URL", text: $mBase)
                         .autocapitalization(.none)
@@ -69,8 +68,8 @@ struct AccountsView: View {
                 }
             }
             .navigationBarTitle("Accounts", displayMode: .inline)
-        }
-        .navigationViewStyle(.stack)
+        
+        
     }
 
     private func addMastodon() async {

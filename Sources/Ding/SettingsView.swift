@@ -6,8 +6,7 @@ struct SettingsView: View {
     @State private var clientId = ""
 
     var body: some View {
-        NavigationView {
-            Form {
+                    Form {
                 Section(header: Text("Twitter Client ID")) {
                     TextField("Client ID", text: $clientId)
                         .autocapitalization(.none)
@@ -40,7 +39,7 @@ struct SettingsView: View {
             }
             .navigationBarTitle("Settings", displayMode: .inline)
             .onAppear { clientId = store.twitterClientId }
-        }
-        .navigationViewStyle(.stack)
+        
+        
     }
 }

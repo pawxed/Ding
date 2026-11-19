@@ -5,8 +5,7 @@ struct BookmarksView: View {
     @EnvironmentObject private var store: Store
 
     var body: some View {
-        NavigationView {
-            Group {
+                    Group {
                 if store.bookmarks.isEmpty {
                     VStack {
                         Image(systemName: "bookmark").font(.largeTitle).foregroundColor(.secondary)
@@ -21,7 +20,7 @@ struct BookmarksView: View {
                 }
             }
             .navigationBarTitle("Bookmarks", displayMode: .inline)
-        }
-        .navigationViewStyle(.stack)
+        
+        
     }
 }

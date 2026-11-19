@@ -5,8 +5,7 @@ struct FYPView: View {
     @EnvironmentObject private var store: Store
 
     var body: some View {
-        NavigationView {
-            Group {
+                    Group {
                 if store.forYouPosts.isEmpty {
                     VStack(spacing: 12) {
                         Image(systemName: "sparkles").font(.largeTitle).foregroundColor(.secondary)
@@ -24,7 +23,7 @@ struct FYPView: View {
                 }
             }
             .navigationBarTitle("For You", displayMode: .inline)
-        }
-        .navigationViewStyle(.stack)
+        
+        
     }
 }

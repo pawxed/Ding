@@ -5,8 +5,7 @@ struct ProfileView: View {
     @EnvironmentObject private var store: Store
 
     var body: some View {
-        NavigationView {
-            VStack(spacing: 16) {
+                    VStack(spacing: 16) {
                 Image(systemName: "person.crop.circle.fill").font(.system(size: 64)).foregroundColor(.secondary)
                 Text(store.profileName.isEmpty ? "No account" : store.profileName).font(.headline)
                 Text("\(store.accounts.count) accounts").font(.caption).foregroundColor(.secondary)
@@ -15,8 +14,8 @@ struct ProfileView: View {
             }
             .padding()
             .navigationBarTitle("Profile", displayMode: .inline)
-        }
-        .navigationViewStyle(.stack)
+        
+        
         .onAppear { Task { await store.loadProfile() } }
     }
 }

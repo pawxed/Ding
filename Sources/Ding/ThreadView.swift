@@ -8,8 +8,7 @@ struct ThreadView: View {
     @State private var sending = false
 
     var body: some View {
-        NavigationView {
-            VStack {
+                    VStack {
                 ScrollView {
                     PostRow(post: post)
                         .padding()
@@ -30,7 +29,7 @@ struct ThreadView: View {
                 .padding()
             }
             .navigationBarTitle("Thread", displayMode: .inline)
-        }
-        .navigationViewStyle(.stack)
+        
+        
     }
 }
