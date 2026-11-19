@@ -19,7 +19,7 @@ struct SearchView: View {
                 }
                 .listStyle(.plain)
             }
-            .navigationBarTitle("Search")
+            .navigationBarTitle("Search", displayMode: .inline)
         }
         .navigationViewStyle(.stack)
     }

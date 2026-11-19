@@ -20,7 +20,7 @@ struct BookmarksView: View {
                     .listStyle(.plain)
                 }
             }
-            .navigationBarTitle("Bookmarks")
+            .navigationBarTitle("Bookmarks", displayMode: .inline)
         }
         .navigationViewStyle(.stack)
     }

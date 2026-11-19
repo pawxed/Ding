@@ -38,7 +38,7 @@ struct SettingsView: View {
                     }
                 }
             }
-            .navigationBarTitle("Settings")
+            .navigationBarTitle("Settings", displayMode: .inline)
             .onAppear { clientId = store.twitterClientId }
         }
         .navigationViewStyle(.stack)

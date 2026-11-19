@@ -29,7 +29,7 @@ struct ThreadView: View {
                 }
                 .padding()
             }
-            .navigationBarTitle("Thread")
+            .navigationBarTitle("Thread", displayMode: .inline)
         }
         .navigationViewStyle(.stack)
     }

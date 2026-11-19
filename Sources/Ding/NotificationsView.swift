@@ -10,7 +10,7 @@ struct NotificationsView: View {
                 Text(n)
             }
             .listStyle(.plain)
-            .navigationBarTitle("Notifications")
+            .navigationBarTitle("Notifications", displayMode: .inline)
             .navigationBarItems(trailing: Button(action: { Task { await store.loadNotifications() } }) { Image(systemName: "arrow.clockwise") })
         }
         .navigationViewStyle(.stack)

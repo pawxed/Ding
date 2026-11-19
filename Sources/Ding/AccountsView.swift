@@ -44,7 +44,7 @@ struct AccountsView: View {
                     TextField("Client ID", text: $tClientId)
                         .autocapitalization(.none)
                         .autocorrectionDisabled()
-                    Text("Register redirect URI ding://oauth-callback in console.x.com").font(.caption).foregroundColor(.secondary)
+                    Text("In console.x.com: App type Native App. Callback URL: ding://oauth-callback. Website URL: any (e.g. https://example.com). Client ID is in Keys and Tokens.").font(.caption).foregroundColor(.secondary)
                     Button("Sign in with Twitter") {
                         Task { await addTwitterOAuth() }
                     }
@@ -79,7 +79,7 @@ struct AccountsView: View {
                     Section { Text(message).font(.caption).foregroundColor(.secondary) }
                 }
             }
-            .navigationBarTitle("Accounts")
+            .navigationBarTitle("Accounts", displayMode: .inline)
         }
         .navigationViewStyle(.stack)
     }

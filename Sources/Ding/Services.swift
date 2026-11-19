@@ -250,7 +250,7 @@ struct BlueskyAPI {
 @available(iOS 13.0, *)
 struct TwitterAPI {
     let token: String
-    private let host = "https://api.twitter.com"
+    private let host = "https://api.x.com"
 
     func me() async throws -> String {
         let url = URL(string: "\(host)/2/users/me")!
@@ -369,7 +369,7 @@ final class TwitterOAuth: NSObject, ASWebAuthenticationPresentationContextProvid
             let verifier = Self.randomString(length: 64)
             let challenge = Self.codeChallenge(for: verifier)
             let state = Self.randomString(length: 16)
-            var comps = URLComponents(string: "https://twitter.com/i/oauth2/authorize")!
+            var comps = URLComponents(string: "https://x.com/i/oauth2/authorize")!
             comps.queryItems = [
                 URLQueryItem(name: "response_type", value: "code"),
                 URLQueryItem(name: "client_id", value: clientId),
@@ -395,7 +395,7 @@ final class TwitterOAuth: NSObject, ASWebAuthenticationPresentationContextProvid
 
     private func exchange(code: String, verifier: String) async {
         do {
-            let comps = URLComponents(string: "https://api.twitter.com/2/oauth2/token")!
+            let comps = URLComponents(string: "https://api.x.com/2/oauth2/token")!
             let body = "grant_type=authorization_code&code=\(code)&redirect_uri=\(redirectUri)&code_verifier=\(verifier)&client_id=\(clientId)"
             var req = URLRequest(url: comps.url!)
             req.httpMethod = "POST"

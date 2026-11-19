@@ -23,7 +23,7 @@ struct FYPView: View {
                     .listStyle(.plain)
                 }
             }
-            .navigationBarTitle("For You")
+            .navigationBarTitle("For You", displayMode: .inline)
         }
         .navigationViewStyle(.stack)
     }

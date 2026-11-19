@@ -14,7 +14,7 @@ struct ProfileView: View {
                 Spacer()
             }
             .padding()
-            .navigationBarTitle("Profile")
+            .navigationBarTitle("Profile", displayMode: .inline)
         }
         .navigationViewStyle(.stack)
         .onAppear { Task { await store.loadProfile() } }
