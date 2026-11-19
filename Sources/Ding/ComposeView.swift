@@ -1,5 +1,6 @@
 import SwiftUI
 
+@available(iOS 13.0, *)
 struct ComposeView: View {
     @EnvironmentObject private var store: Store
     @State private var text = ""
@@ -58,6 +59,7 @@ struct ComposeView: View {
     }
 }
 
+@available(iOS 13.0, *)
 struct TextView: UIViewRepresentable {
     @Binding var text: String
     func makeUIView(context: Context) -> UITextView {
