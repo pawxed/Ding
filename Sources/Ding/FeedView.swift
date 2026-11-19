@@ -1,5 +1,6 @@
 import SwiftUI
 
+@available(iOS 13.0, *)
 struct FeedView: View {
     static let dateFmt: DateFormatter = {
         let f = DateFormatter()
@@ -41,6 +42,7 @@ struct FeedView: View {
     }
 }
 
+@available(iOS 13.0, *)
 struct PostRow: View {
     let post: Post
     var body: some View {

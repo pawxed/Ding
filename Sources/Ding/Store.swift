@@ -1,6 +1,7 @@
 import SwiftUI
 import Combine
 
+@available(iOS 13.0, *)
 @MainActor
 final class Store: ObservableObject {
     @Published var accounts: [Account] = []

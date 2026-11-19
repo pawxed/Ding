@@ -1,5 +1,6 @@
 import SwiftUI
 
+@available(iOS 13.0, *)
 struct AccountsView: View {
     @EnvironmentObject private var store: Store
 

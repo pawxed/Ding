@@ -8,6 +8,7 @@ final class ImageCache {
     func set(_ image: UIImage, for url: URL) { cache.setObject(image, forKey: url.absoluteString as NSString) }
 }
 
+@available(iOS 13.0, *)
 struct CachedImage: View {
     let url: URL?
     @State private var image: UIImage?

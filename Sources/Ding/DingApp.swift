@@ -20,6 +20,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     }
 }
 
+@available(iOS 13.0, *)
 struct RootView: View {
     @EnvironmentObject private var store: Store
     @State private var selectedTab = 0
