@@ -176,4 +176,148 @@ final class Store: ObservableObject {
         }
         return posts.sorted { score($0) > score($1) }
     }
-}
+    func like(_ post: Post) async {
+        guard let account = accounts.first(where: { $0.source == post.source }) else { return }
+        do {
+            switch post.source {
+            case .mastodon:
+                guard let base = account.baseURL else { return }
+                try await MastodonAPI(base: base, token: account.token).favourite(String(post.id.dropFirst(2)))
+            case .bluesky:
+                break
+            case .twitter:
+                let userId = try await TwitterAPI(token: account.token).me()
+                try await TwitterAPI(token: account.token).like(tweetId: String(post.id.dropFirst(2)), userId: userId)
+            }
+            toggleLike(post)
+        } catch { self.error = error.localizedDescription }
+    }
+
+    func repost(_ post: Post) async {
+        guard let account = accounts.first(where: { $0.source == post.source }) else { return }
+        do {
+            switch post.source {
+            case .mastodon:
+                guard let base = account.baseURL else { return }
+                try await MastodonAPI(base: base, token: account.token).reblog(String(post.id.dropFirst(2)))
+            case .bluesky:
+                break
+            case .twitter:
+                let userId = try await TwitterAPI(token: account.token).me()
+                try await TwitterAPI(token: account.token).retweet(tweetId: String(post.id.dropFirst(2)), userId: userId)
+            }
+            await refresh()
+        } catch { self.error = error.localizedDescription }
+    }
+
+    func deletePost(_ post: Post) async {
+        guard let account = accounts.first(where: { $0.source == post.source }) else { return }
+        do {
+            switch post.source {
+            case .mastodon:
+                guard let base = account.baseURL else { return }
+                try await MastodonAPI(base: base, token: account.token).deleteStatus(String(post.id.dropFirst(2)))
+            case .bluesky:
+                break
+            case .twitter:
+                try await TwitterAPI(token: account.token).deleteTweet(String(post.id.dropFirst(2)))
+            }
+            posts.removeAll { $0.id == post.id }
+        } catch { self.error = error.localizedDescription }
+    }
+
+    func reply(_ text: String, to post: Post) async -> Bool {
+        guard let account = accounts.first(where: { $0.source == post.source }) else { return false }
+        do {
+            switch post.source {
+            case .mastodon:
+                guard let base = account.baseURL else { return false }
+                try await MastodonAPI(base: base, token: account.token).reply(text, to: String(post.id.dropFirst(2)))
+            case .bluesky:
+                break
+            case .twitter:
+                try await TwitterAPI(token: account.token).reply(text, to: String(post.id.dropFirst(2)))
+            }
+            replyTarget = nil
+            await refresh()
+            return true
+        } catch {
+            self.error = error.localizedDescription
+            return false
+        }
+    }
+
+    func search(_ query: String) async {
+        searchText = query
+        var collected: [Post] = []
+        await withTaskGroup(of: [Post].self) { group in
+            for account in accounts {
+                group.addTask {
+                    do {
+                        switch account.source {
+                        case .mastodon:
+                            guard let base = account.baseURL else { return [] }
+                            return try await MastodonAPI(base: base, token: account.token).search(query)
+                        case .bluesky:
+                            let session = BlueskySession(did: account.secret ?? "", handle: account.handle, accessJwt: account.token)
+                            return try await BlueskyAPI(session: session).search(query)
+                        case .twitter:
+                            return try await TwitterAPI(token: account.token).search(query)
+                        }
+                    } catch { return [] }
+                }
+            }
+            for await batch in group { collected.append(contentsOf: batch) }
+        }
+        collected.sort { $0.date > $1.date }
+        searchResults = collected
+    }
+
+    func loadNotifications() async {
+        var collected: [String] = []
+        for account in accounts {
+            do {
+                switch account.source {
+                case .mastodon:
+                    guard let base = account.baseURL else { continue }
+                    collected.append(contentsOf: try await MastodonAPI(base: base, token: account.token).notifications())
+                case .bluesky:
+                    let session = BlueskySession(did: account.secret ?? "", handle: account.handle, accessJwt: account.token)
+                    collected.append(contentsOf: try await BlueskyAPI(session: session).notifications())
+                case .twitter:
+                    break
+                }
+            } catch {}
+        }
+        notifications = collected
+    }
+
+    func loadProfile() async {
+        if let account = accounts.first {
+            do {
+                switch account.source {
+                case .mastodon:
+                    guard let base = account.baseURL else { return }
+                    profileName = try await MastodonAPI(base: base, token: account.token).verifyCredentials()
+                case .bluesky:
+                    let session = BlueskySession(did: account.secret ?? "", handle: account.handle, accessJwt: account.token)
+                    profileName = try await BlueskyAPI(session: session).getProfile()
+                case .twitter:
+                    profileName = account.handle
+                }
+            } catch { profileName = account.handle }
+        }
+    }
+
+    func toggleBookmark(_ post: Post) {
+        if let idx = bookmarks.firstIndex(where: { $0.id == post.id }) {
+            bookmarks.remove(at: idx)
+        } else {
+            bookmarks.append(post)
+        }
+        saveBookmarks()
+    }
+
+    func isBookmarked(_ post: Post) -> Bool {
+        bookmarks.contains { $0.id == post.id }
+    }}
