@@ -19,7 +19,7 @@ struct AccountsView: View {
     var body: some View {
         NavigationView {
             Form {
-                Section("Mastodon") {
+                Section(header: Text("Mastodon")) {
                     TextField("Instance URL", text: $mBase)
                         .autocapitalization(.none)
                         .autocorrectionDisabled()
@@ -29,7 +29,7 @@ struct AccountsView: View {
                     }
                     .disabled(mToken.isEmpty || busy)
                 }
-                Section("Bluesky") {
+                Section(header: Text("Bluesky")) {
                     TextField("Handle or email", text: $bIdent)
                         .autocapitalization(.none)
                         .autocorrectionDisabled()
@@ -39,14 +39,14 @@ struct AccountsView: View {
                     }
                     .disabled(bIdent.isEmpty || bPass.isEmpty || busy)
                 }
-                Section("Twitter / X") {
+                Section(header: Text("Twitter / X")) {
                     SecureField("Bearer / user token", text: $tToken)
                     Button("Add Twitter account") {
                         Task { await addTwitter() }
                     }
                     .disabled(tToken.isEmpty || busy)
                 }
-                Section("Connected") {
+                Section(header: Text("Connected")) {
                     if store.accounts.isEmpty {
                         Text("None yet").foregroundColor(.secondary)
                     } else {
@@ -58,7 +58,7 @@ struct AccountsView: View {
                                     Text(acc.handle).font(.caption).foregroundColor(.secondary)
                                 }
                                 Spacer()
-                                Text(acc.source.label).font(.caption2).foregroundColor(.secondary)
+                                Text(acc.source.label).font(.caption).foregroundColor(.secondary)
                             }
                             Button(action: { store.remove(acc) }) { Image(systemName: "trash").foregroundColor(.red) }
                         }

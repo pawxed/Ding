@@ -11,13 +11,13 @@ struct ComposeView: View {
     var body: some View {
         NavigationView {
             Form {
-                Section("Account") {
+                Section(header: Text("Account")) {
                     Picker("Post to", selection: $source) {
                         ForEach(Source.allCases) { s in Text(s.label).tag(s) }
                     }
                     .pickerStyle(.segmented)
                 }
-                Section("Message") {
+                Section(header: Text("Message")) {
                     TextView(text: $text)
                         .frame(minHeight: 120)
                 }

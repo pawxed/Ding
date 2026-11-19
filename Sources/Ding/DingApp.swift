@@ -12,7 +12,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
             window.rootViewController = UIHostingController(rootView: RootView().environmentObject(Store()))
         } else {
             window.rootViewController = UIViewController()
-            window.rootViewController?.view.backgroundColor = .systemBackground
+            window.rootViewController?.view.backgroundColor = .white
         }
         self.window = window
         window.makeKeyAndVisible()

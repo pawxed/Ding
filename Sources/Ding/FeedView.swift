@@ -61,7 +61,7 @@ struct PostRow: View {
                 HStack(spacing: 16) {
                     HStack(spacing: 2) { Image(systemName: "bubble.left").font(.caption); Text("\(post.replyCount)").font(.caption) }
                     HStack(spacing: 2) { Image(systemName: "heart").font(.caption); Text("\(post.likeCount)").font(.caption) }
-                    Text(Self.dateFmt.string(from: post.date)).font(.caption).foregroundColor(.secondary)
+                    Text(FeedView.dateFmt.string(from: post.date)).font(.caption).foregroundColor(.secondary)
                 }
                 .font(.caption)
                 .foregroundColor(.secondary)
