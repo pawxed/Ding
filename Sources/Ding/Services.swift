@@ -11,6 +11,7 @@ enum APIError: Error, LocalizedError {
     }
 }
 
+@available(iOS 13.0, *)
 struct HTTP {
     static let session: URLSession = {
         let c = URLSessionConfiguration.default
@@ -42,6 +43,7 @@ struct HTTP {
 
 // MARK: - Mastodon
 
+@available(iOS 13.0, *)
 struct MastodonAPI {
     let base: String
     let token: String
@@ -76,12 +78,14 @@ struct MastodonAPI {
 
 // MARK: - Bluesky
 
+@available(iOS 13.0, *)
 struct BlueskySession {
     let did: String
     let handle: String
     let accessJwt: String
 }
 
+@available(iOS 13.0, *)
 struct BlueskyAPI {
     static let host = "https://bsky.social"
 
@@ -137,6 +141,7 @@ struct BlueskyAPI {
 
 // MARK: - Twitter
 
+@available(iOS 13.0, *)
 struct TwitterAPI {
     let token: String
     private let host = "https://api.twitter.com"
