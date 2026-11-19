@@ -12,7 +12,6 @@ struct AccountsView: View {
     @State private var bPass = ""
     
     @State private var tToken = ""
-    @State private var tClientId = ""
 
     @State private var busy = false
     @State private var message: String?
@@ -39,16 +38,6 @@ struct AccountsView: View {
                         Task { await addBluesky() }
                     }
                     .disabled(bIdent.isEmpty || bPass.isEmpty || busy)
-                }
-                Section(header: Text("Twitter / X (OAuth 2.0)")) {
-                    TextField("Client ID", text: $tClientId)
-                        .autocapitalization(.none)
-                        .autocorrectionDisabled()
-                    Text("In console.x.com: App type Native App. Callback URL: ding://oauth-callback. Website URL: any (e.g. https://example.com). Client ID is in Keys and Tokens.").font(.caption).foregroundColor(.secondary)
-                    Button("Sign in with Twitter") {
-                        Task { await addTwitterOAuth() }
-                    }
-                    .disabled(tClientId.isEmpty || busy)
                 }
                 Section(header: Text("Twitter / X (token)")) {
                     SecureField("Bearer / user token", text: $tToken)
@@ -122,14 +111,4 @@ struct AccountsView: View {
         }
     }
 
-    private func addTwitterOAuth() async {
-        busy = true; defer { busy = false }
-        let ok = await store.loginTwitter(clientId: tClientId)
-        if ok {
-            tClientId = ""
-            message = "Twitter signed in."
-        } else {
-            message = store.error ?? "Twitter sign-in failed."
-        }
-    }
 }

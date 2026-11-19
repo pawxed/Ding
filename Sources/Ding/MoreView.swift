@@ -7,6 +7,7 @@ struct MoreView: View {
     var body: some View {
         NavigationView {
             List {
+                NavigationLink("Twitter Web") { TwitterWebView() }
                 NavigationLink("For You") { FYPView() }
                 NavigationLink("Bookmarks") { BookmarksView() }
                 NavigationLink("Profile") { ProfileView() }

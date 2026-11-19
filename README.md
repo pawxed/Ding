@@ -2,15 +2,9 @@
 
 A lightweight SwiftUI client combining Mastodon (any instance, e.g. woof.tech), Bluesky, and Twitter/X into one feed.
 
-## Twitter/X setup (console.x.com)
+## Twitter/X note
 
-1. Create an app at console.x.com.
-2. Set App type to "Native App" (public client, no secret needed).
-3. Under User authentication settings, add Callback URL `ding://oauth-callback` and any Website URL.
-4. In Keys and Tokens, copy the OAuth 2.0 Client ID.
-5. Paste the Client ID in Ding's Accounts tab and tap "Sign in with Twitter".
-
-If no Client ID is shown, contact X developer support.
+X API access is now paid and requires a developer account at console.x.com. Ding supports pasting a bearer/user token if you have one. Without a token, use the "Twitter Web" entry in the More tab, which embeds x.com in-app with no API key.
 
 ## Build
 
