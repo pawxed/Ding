@@ -21,7 +21,7 @@ struct Account: Codable, Identifiable, Hashable {
     var secret: String?    
 }
 
-struct Post: Identifiable, Hashable {
+struct Post: Identifiable, Hashable, Codable {
     let id: String
     let source: Source
     let author: String

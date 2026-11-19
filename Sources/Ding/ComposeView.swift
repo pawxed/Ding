@@ -15,15 +15,22 @@ struct ComposeView: View {
     var body: some View {
         NavigationView {
             Form {
-                Section(header: Text("Post to")) {
-                    ForEach(connectedSources) { s in
-                        Toggle(s.label, isOn: Binding(
-                            get: { selected.contains(s) },
-                            set: { on in if on { selected.insert(s) } else { selected.remove(s) } }
-                        ))
+                if let target = store.replyTarget {
+                    Section(header: Text("Replying to")) {
+                        Text(target.text).font(.caption).foregroundColor(.secondary)
+                        Button("Cancel reply") { store.replyTarget = nil }
                     }
-                    if connectedSources.isEmpty {
-                        Text("No accounts connected.").foregroundColor(.secondary)
+                } else {
+                    Section(header: Text("Post to")) {
+                        ForEach(connectedSources) { s in
+                            Toggle(s.label, isOn: Binding(
+                                get: { selected.contains(s) },
+                                set: { on in if on { selected.insert(s) } else { selected.remove(s) } }
+                            ))
+                        }
+                        if connectedSources.isEmpty {
+                            Text("No accounts connected.").foregroundColor(.secondary)
+                        }
                     }
                 }
                 Section(header: Text("Message")) {
@@ -34,7 +41,12 @@ struct ComposeView: View {
                     Button {
                         posting = true
                         Task {
-                            let ok = await store.crosspost(text, sources: Array(selected))
+                            var ok = false
+                            if let target = store.replyTarget {
+                                ok = await store.reply(text, to: target)
+                            } else {
+                                ok = await store.crosspost(text, sources: Array(selected))
+                            }
                             posting = false
                             if ok { text = ""; result = "Posted" } else { result = store.error ?? "Failed" }
                         }
@@ -44,7 +56,7 @@ struct ComposeView: View {
                             Text(posting ? "Posting…" : "Post")
                         }
                     }
-                    .disabled(text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || selected.isEmpty || posting)
+                    .disabled(text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || (store.replyTarget == nil && selected.isEmpty) || posting)
                 }
                 if let result {
                     Section { Text(result).font(.caption).foregroundColor(.secondary) }

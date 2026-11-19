@@ -11,11 +11,28 @@ final class Store: ObservableObject {
     @Published var twitterClientId: String = UserDefaults.standard.string(forKey: "ding.twitterClientId") ?? ""
     @Published var liked: Set<String> = Set(UserDefaults.standard.stringArray(forKey: "ding.liked") ?? [])
     @Published var interests: Set<String> = Set(UserDefaults.standard.stringArray(forKey: "ding.interests") ?? [])
+    @Published var bookmarks: [Post] = []
+    @Published var searchResults: [Post] = []
+    @Published var notifications: [String] = []
+    @Published var profileName: String = ""
+    @Published var replyTarget: Post? = nil
+    @Published var searchText: String = ""
 
     private let accountsKey = "ding.accounts"
 
     init() {
         loadAccounts()
+        loadBookmarks()
+    }
+    func loadBookmarks() {
+        guard let data = UserDefaults.standard.data(forKey: "ding.bookmarks"),
+              let decoded = try? JSONDecoder().decode([Post].self, from: data) else { return }
+        bookmarks = decoded
+    }
+    func saveBookmarks() {
+        if let data = try? JSONEncoder().encode(bookmarks) {
+            UserDefaults.standard.set(data, forKey: "ding.bookmarks")
+        }
     }
 
     func loadAccounts() {

@@ -44,6 +44,7 @@ struct FeedView: View {
 
 @available(iOS 13.0, *)
 struct PostRow: View {
+    @EnvironmentObject private var store: Store
     let post: Post
     var liked: Bool = false
     var onLike: (() -> Void)? = nil
@@ -60,12 +61,34 @@ struct PostRow: View {
                     Image(systemName: post.source.symbol).font(.caption).foregroundColor(.secondary)
                 }
                 Text(post.text).font(.body).fixedSize(horizontal: false, vertical: true)
-                HStack(spacing: 16) {
+                HStack(spacing: 12) {
                     HStack(spacing: 2) { Image(systemName: "bubble.left").font(.caption); Text("\(post.replyCount)").font(.caption) }
                     Button(action: { onLike?() }) {
                         HStack(spacing: 2) { Image(systemName: liked ? "heart.fill" : "heart").font(.caption); Text("\(post.likeCount)").font(.caption) }
                     }
                     .buttonStyle(PlainButtonStyle())
+                    Button(action: { Task { await store.like(post) } }) {
+                        Image(systemName: "hand.thumbsup").font(.caption)
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                    Button(action: { Task { await store.repost(post) } }) {
+                        Image(systemName: "arrow.2.squarepath").font(.caption)
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                    Button(action: { store.replyTarget = post }) {
+                        Image(systemName: "arrowshape.turn.up.left").font(.caption)
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                    Button(action: { store.toggleBookmark(post) }) {
+                        Image(systemName: store.isBookmarked(post) ? "bookmark.fill" : "bookmark").font(.caption)
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                    if store.accounts.contains(where: { $0.source == post.source }) {
+                        Button(action: { Task { await store.deletePost(post) } }) {
+                            Image(systemName: "trash").font(.caption).foregroundColor(.red)
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                    }
                     Text(FeedView.dateFmt.string(from: post.date)).font(.caption).foregroundColor(.secondary)
                 }
                 .font(.caption)
