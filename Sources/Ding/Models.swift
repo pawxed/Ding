@@ -17,8 +17,8 @@ struct Account: Codable, Identifiable, Hashable {
     var displayName: String
     var handle: String
     var token: String
-    var baseURL: String?   // mastodon instance
-    var secret: String?    // bluesky app password / twitter secret
+    var baseURL: String?   
+    var secret: String?    
 }
 
 struct Post: Identifiable, Hashable {
@@ -33,7 +33,7 @@ struct Post: Identifiable, Hashable {
     let replyCount: Int
 }
 
-// MARK: - JSON helpers
+
 
 enum JSON {
     static let decoder: JSONDecoder = {

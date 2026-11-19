@@ -9,5 +9,13 @@
   <key>UILaunchScreen</key><dict/>
   <key>UISupportedInterfaceOrientations</key><array><string>UIInterfaceOrientationPortrait</string></array>
   <key>ITSAppUsesNonExemptEncryption</key><false/>
+  <key>CFBundleURLTypes</key>
+  <array>
+    <dict>
+      <key>CFBundleURLName</key><string>com.ding.app</string>
+      <key>CFBundleURLSchemes</key>
+      <array><string>ding</string></array>
+    </dict>
+  </array>
 </dict>
 </plist>

@@ -28,8 +28,9 @@ struct RootView: View {
     var body: some View {
         TabView(selection: $selectedTab) {
             FeedView().tabItem { Image(systemName: "house"); Text("Feed") }.tag(0)
-            ComposeView().tabItem { Image(systemName: "square.and.pencil"); Text("Post") }.tag(1)
-            AccountsView().tabItem { Image(systemName: "person.2"); Text("Accounts") }.tag(2)
+            FYPView().tabItem { Image(systemName: "sparkles"); Text("For You") }.tag(1)
+            ComposeView().tabItem { Image(systemName: "square.and.pencil"); Text("Post") }.tag(2)
+            AccountsView().tabItem { Image(systemName: "person.2"); Text("Accounts") }.tag(3)
         }
     }
 }

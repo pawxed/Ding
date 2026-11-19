@@ -4,14 +4,15 @@ import SwiftUI
 struct AccountsView: View {
     @EnvironmentObject private var store: Store
 
-    // Mastodon
+    
     @State private var mBase = "https://woof.tech"
     @State private var mToken = ""
-    // Bluesky
+    
     @State private var bIdent = ""
     @State private var bPass = ""
-    // Twitter
+    
     @State private var tToken = ""
+    @State private var tClientId = ""
 
     @State private var busy = false
     @State private var message: String?
@@ -39,7 +40,17 @@ struct AccountsView: View {
                     }
                     .disabled(bIdent.isEmpty || bPass.isEmpty || busy)
                 }
-                Section(header: Text("Twitter / X")) {
+                Section(header: Text("Twitter / X (OAuth 2.0)")) {
+                    TextField("Client ID", text: $tClientId)
+                        .autocapitalization(.none)
+                        .autocorrectionDisabled()
+                    Text("Register redirect URI ding://oauth-callback in console.x.com").font(.caption).foregroundColor(.secondary)
+                    Button("Sign in with Twitter") {
+                        Task { await addTwitterOAuth() }
+                    }
+                    .disabled(tClientId.isEmpty || busy)
+                }
+                Section(header: Text("Twitter / X (token)")) {
                     SecureField("Bearer / user token", text: $tToken)
                     Button("Add Twitter account") {
                         Task { await addTwitter() }
@@ -108,6 +119,17 @@ struct AccountsView: View {
             await store.refresh()
         } catch {
             message = error.localizedDescription
+        }
+    }
+
+    private func addTwitterOAuth() async {
+        busy = true; defer { busy = false }
+        let ok = await store.loginTwitter(clientId: tClientId)
+        if ok {
+            tClientId = ""
+            message = "Twitter signed in."
+        } else {
+            message = store.error ?? "Twitter sign-in failed."
         }
     }
 }

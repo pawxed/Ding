@@ -8,6 +8,9 @@ final class Store: ObservableObject {
     @Published var posts: [Post] = []
     @Published var loading = false
     @Published var error: String?
+    @Published var twitterClientId: String = UserDefaults.standard.string(forKey: "ding.twitterClientId") ?? ""
+    @Published var liked: Set<String> = Set(UserDefaults.standard.stringArray(forKey: "ding.liked") ?? [])
+    @Published var interests: Set<String> = Set(UserDefaults.standard.stringArray(forKey: "ding.interests") ?? [])
 
     private let accountsKey = "ding.accounts"
 
@@ -25,6 +28,13 @@ final class Store: ObservableObject {
         if let data = try? JSONEncoder().encode(accounts) {
             UserDefaults.standard.set(data, forKey: accountsKey)
         }
+    }
+    func saveTwitterClientId() {
+        UserDefaults.standard.set(twitterClientId, forKey: "ding.twitterClientId")
+    }
+    func persistLiked() {
+        UserDefaults.standard.set(Array(liked), forKey: "ding.liked")
+        UserDefaults.standard.set(Array(interests), forKey: "ding.interests")
     }
 
     func add(_ account: Account) {
@@ -62,7 +72,7 @@ final class Store: ObservableObject {
                 guard let base = account.baseURL else { return [] }
                 return try await MastodonAPI(base: base, token: account.token).home()
             case .bluesky:
-                // token stored as accessJwt; secret holds password for relogin? We store accessJwt in token.
+                
                 let session = BlueskySession(did: account.secret ?? "", handle: account.handle, accessJwt: account.token)
                 return try await BlueskyAPI(session: session).home()
             case .twitter:
@@ -92,5 +102,61 @@ final class Store: ObservableObject {
             self.error = error.localizedDescription
             return false
         }
+    }
+
+    func loginTwitter(clientId: String) async -> Bool {
+        twitterClientId = clientId
+        saveTwitterClientId()
+        guard #available(iOS 13.0, *) else { return false }
+        do {
+            let token = try await TwitterOAuth(clientId: clientId).signIn()
+            let api = TwitterAPI(token: token)
+            let id = try await api.me()
+            let acc = Account(id: UUID(), source: .twitter, displayName: "Twitter", handle: "@\(id)", token: token, baseURL: nil, secret: nil)
+            add(acc)
+            await refresh()
+            return true
+        } catch {
+            self.error = error.localizedDescription
+            return false
+        }
+    }
+
+    func crosspost(_ text: String, sources: [Source]) async -> Bool {
+        var ok = true
+        for s in sources {
+            let r = await compose(text, source: s)
+            if !r { ok = false }
+        }
+        return ok
+    }
+
+    func toggleLike(_ post: Post) {
+        if liked.contains(post.id) {
+            liked.remove(post.id)
+        } else {
+            liked.insert(post.id)
+            
+            let words = post.text.lowercased().split { !$0.isLetter && !$0.isNumber }
+            for w in words where w.count > 3 {
+                interests.insert(String(w))
+            }
+        }
+        persistLiked()
+    }
+
+    var forYouPosts: [Post] {
+        let now = Date()
+        func score(_ p: Post) -> Double {
+            let age = now.timeIntervalSince(p.date)
+            var s = -age / 3600.0  
+            let words = p.text.lowercased().split { !$0.isLetter && !$0.isNumber }
+            let matches = words.filter { interests.contains(String($0)) }.count
+            s += Double(matches) * 5.0
+            if liked.contains(p.id) { s += 20.0 }
+            
+            return s
+        }
+        return posts.sorted { score($0) > score($1) }
     }
 }

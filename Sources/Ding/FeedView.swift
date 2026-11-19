@@ -45,6 +45,8 @@ struct FeedView: View {
 @available(iOS 13.0, *)
 struct PostRow: View {
     let post: Post
+    var liked: Bool = false
+    var onLike: (() -> Void)? = nil
     var body: some View {
         HStack(alignment: .top, spacing: 10) {
             CachedImage(url: post.avatarURL)
@@ -60,7 +62,10 @@ struct PostRow: View {
                 Text(post.text).font(.body).fixedSize(horizontal: false, vertical: true)
                 HStack(spacing: 16) {
                     HStack(spacing: 2) { Image(systemName: "bubble.left").font(.caption); Text("\(post.replyCount)").font(.caption) }
-                    HStack(spacing: 2) { Image(systemName: "heart").font(.caption); Text("\(post.likeCount)").font(.caption) }
+                    Button(action: { onLike?() }) {
+                        HStack(spacing: 2) { Image(systemName: liked ? "heart.fill" : "heart").font(.caption); Text("\(post.likeCount)").font(.caption) }
+                    }
+                    .buttonStyle(PlainButtonStyle())
                     Text(FeedView.dateFmt.string(from: post.date)).font(.caption).foregroundColor(.secondary)
                 }
                 .font(.caption)

@@ -1,21 +1,29 @@
 import SwiftUI
 
-@available(iOS 13.0, *)
 struct ComposeView: View {
     @EnvironmentObject private var store: Store
     @State private var text = ""
-    @State private var source: Source = .mastodon
+    @State private var selected: Set<Source> = []
     @State private var posting = false
     @State private var result: String?
+
+    var connectedSources: [Source] {
+        Array(Set(store.accounts.map { $0.source })).sorted { $0.label < $1.label }
+    }
 
     var body: some View {
         NavigationView {
             Form {
-                Section(header: Text("Account")) {
-                    Picker("Post to", selection: $source) {
-                        ForEach(Source.allCases) { s in Text(s.label).tag(s) }
+                Section(header: Text("Post to")) {
+                    ForEach(connectedSources) { s in
+                        Toggle(s.label, isOn: Binding(
+                            get: { selected.contains(s) },
+                            set: { on in if on { selected.insert(s) } else { selected.remove(s) } }
+                        ))
                     }
-                    .pickerStyle(.segmented)
+                    if connectedSources.isEmpty {
+                        Text("No accounts connected.").foregroundColor(.secondary)
+                    }
                 }
                 Section(header: Text("Message")) {
                     TextView(text: $text)
@@ -25,7 +33,7 @@ struct ComposeView: View {
                     Button {
                         posting = true
                         Task {
-                            let ok = await store.compose(text, source: source)
+                            let ok = await store.crosspost(text, sources: Array(selected))
                             posting = false
                             if ok { text = ""; result = "Posted" } else { result = store.error ?? "Failed" }
                         }
@@ -35,19 +43,21 @@ struct ComposeView: View {
                             Text(posting ? "Posting…" : "Post")
                         }
                     }
-                    .disabled(text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || posting)
+                    .disabled(text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || selected.isEmpty || posting)
                 }
                 if let result {
                     Section { Text(result).font(.caption).foregroundColor(.secondary) }
                 }
             }
             .navigationBarTitle("Compose")
+            .onAppear {
+                if selected.isEmpty { selected = Set(connectedSources) }
+            }
         }
         .navigationViewStyle(.stack)
     }
 }
 
-@available(iOS 13.0, *)
 struct TextView: UIViewRepresentable {
     @Binding var text: String
     func makeUIView(context: Context) -> UITextView {

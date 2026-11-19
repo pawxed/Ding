@@ -1,4 +1,6 @@
 import Foundation
+import AuthenticationServices
+import CryptoKit
 
 enum APIError: Error, LocalizedError {
     case badStatus(Int, String)
@@ -41,7 +43,7 @@ struct HTTP {
     }
 }
 
-// MARK: - Mastodon
+
 
 @available(iOS 13.0, *)
 struct MastodonAPI {
@@ -76,7 +78,7 @@ struct MastodonAPI {
     }
 }
 
-// MARK: - Bluesky
+
 
 @available(iOS 13.0, *)
 struct BlueskySession {
@@ -139,7 +141,7 @@ struct BlueskyAPI {
     }
 }
 
-// MARK: - Twitter
+
 
 @available(iOS 13.0, *)
 struct TwitterAPI {
@@ -192,13 +194,13 @@ struct TwitterAPI {
     }
 }
 
-// MARK: - HTML strip
+
 
 func stripHTML(_ s: String) -> String {
     var out = s
-    // remove tags
+    
     while let r = out.range(of: "<[^>]+>", options: .regularExpression) { out.removeSubrange(r) }
-    // common entities
+    
     out = out.replacingOccurrences(of: "&amp;", with: "&")
     out = out.replacingOccurrences(of: "&lt;", with: "<")
     out = out.replacingOccurrences(of: "&gt;", with: ">")
@@ -206,4 +208,90 @@ func stripHTML(_ s: String) -> String {
     out = out.replacingOccurrences(of: "&#39;", with: "'")
     out = out.replacingOccurrences(of: "&nbsp;", with: " ")
     return out.trimmingCharacters(in: .whitespacesAndNewlines)
+}
+
+
+
+@available(iOS 13.0, *)
+final class TwitterOAuth: NSObject, ASWebAuthenticationPresentationContextProviding {
+    let clientId: String
+    let redirectUri = "ding://oauth-callback"
+    private var continuation: CheckedContinuation<String, Error>?
+
+    init(clientId: String) { self.clientId = clientId }
+
+    func signIn() async throws -> String {
+        try await withCheckedThrowingContinuation { cont in
+            self.continuation = cont
+            let verifier = Self.randomString(length: 64)
+            let challenge = Self.codeChallenge(for: verifier)
+            let state = Self.randomString(length: 16)
+            var comps = URLComponents(string: "https://twitter.com/i/oauth2/authorize")!
+            comps.queryItems = [
+                URLQueryItem(name: "response_type", value: "code"),
+                URLQueryItem(name: "client_id", value: clientId),
+                URLQueryItem(name: "redirect_uri", value: redirectUri),
+                URLQueryItem(name: "scope", value: "tweet.read tweet.write users.read offline.access"),
+                URLQueryItem(name: "state", value: state),
+                URLQueryItem(name: "code_challenge", value: challenge),
+                URLQueryItem(name: "code_challenge_method", value: "S256")
+            ]
+            let session = ASWebAuthenticationSession(url: comps.url!, callbackURLScheme: "ding") { [weak self] url, error in
+                guard let self else { return }
+                if let error { self.finish(.failure(error)); return }
+                guard let url, let code = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems?.first(where: { $0.name == "code" })?.value else {
+                    self.finish(.failure(APIError.decode("no code"))); return
+                }
+                Task { await self.exchange(code: code, verifier: verifier) }
+            }
+            session.presentationContextProvider = self
+            session.prefersEphemeralWebBrowserSession = false
+            session.start()
+        }
+    }
+
+    private func exchange(code: String, verifier: String) async {
+        do {
+            var comps = URLComponents(string: "https://api.twitter.com/2/oauth2/token")!
+            let body = "grant_type=authorization_code&code=\(code)&redirect_uri=\(redirectUri)&code_verifier=\(verifier)&client_id=\(clientId)"
+            var req = URLRequest(url: comps.url!)
+            req.httpMethod = "POST"
+            req.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
+            req.httpBody = body.data(using: .utf8)
+            let (data, resp) = try await HTTP.session.data(for: req)
+            guard let http = resp as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
+                throw APIError.badStatus((resp as? HTTPURLResponse)?.statusCode ?? 0, String(data: data, encoding: .utf8) ?? "")
+            }
+            guard let o = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                  let token = o["access_token"] as? String else { throw APIError.decode("token") }
+            finish(.success(token))
+        } catch {
+            finish(.failure(error))
+        }
+    }
+
+    private func finish(_ result: Result<String, Error>) {
+        continuation?.resume(with: result)
+        continuation = nil
+    }
+
+    func presentationAnchor(for session: ASWebAuthenticationSession) -> ASPresentationAnchor {
+        if let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+           let window = scene.windows.first { return window }
+        return ASPresentationAnchor()
+    }
+
+    static func randomString(length: Int) -> String {
+        let chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._~"
+        return String((0..<length).map { _ in chars.randomElement()! })
+    }
+
+    static func codeChallenge(for verifier: String) -> String {
+        let data = Data(verifier.utf8)
+        let hash = SHA256.hash(data: data)
+        return Data(hash).base64EncodedString()
+            .replacingOccurrences(of: "+", with: "-")
+            .replacingOccurrences(of: "/", with: "_")
+            .replacingOccurrences(of: "=", with: "")
+    }
 }
