@@ -1,20 +1,17 @@
 import SwiftUI
-import WebKit
+import SafariServices
 
 @available(iOS 13.0, *)
 struct TwitterWebView: View {
     var body: some View {
-        WebView(url: URL(string: "https://x.com")!)
-            .navigationBarTitle("Twitter Web", displayMode: .inline)
+        SafariView(url: URL(string: "https://x.com")!)
     }
 }
 
-struct WebView: UIViewRepresentable {
+struct SafariView: UIViewControllerRepresentable {
     let url: URL
-    func makeUIView(context: Context) -> WKWebView {
-        let w = WKWebView()
-        w.load(URLRequest(url: url))
-        return w
+    func makeUIViewController(context: Context) -> SFSafariViewController {
+        SFSafariViewController(url: url)
     }
-    func updateUIView(_ uiView: WKWebView, context: Context) {}
+    func updateUIViewController(_ uiViewController: SFSafariViewController, context: Context) {}
 }
